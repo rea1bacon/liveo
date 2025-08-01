@@ -1,80 +1,66 @@
-use super::queries;
-use super::utils;
-use std::error::Error;
-use tokio_postgres::Client;
+use chrono::DateTime;
+use chrono::Utc;
+use postgres_types::{FromSql, ToSql};
+use uuid::Uuid;
+
+#[derive(Debug, ToSql, FromSql)]
+pub struct Col {
+    pub(crate) name: String,
+    pub(crate) data_type: String,
+}
 
 #[allow(dead_code)]
 pub struct TrackTable {
+    id: Uuid,
+    pub(crate) name: String,
     pub on: On,
-    pub table: String,
-    pub track_col: Vec<String>,
-    pub old: bool,
-    pub new: bool,
+    pub(crate) p_id: Option<Col>,
+    table: String,
+    pub(crate) track: Vec<Col>,
+    pub(crate) old: bool,
+    pub(crate) new: bool,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
 }
 
 #[allow(dead_code)]
 impl TrackTable {
-    fn new<T: IntoIterator<Item = String>>(
+    pub fn new<T: IntoIterator<Item = Col>>(
+        id: Uuid,
+        name: String,
         on: On,
+        p_id: Option<Col>,
         table: String,
         track: T,
         old: bool,
         new: bool,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
     ) -> Self {
         TrackTable {
+            id,
+            name,
             on,
+            p_id,
             table,
-            track_col: track.into_iter().collect(),
+            track: track.into_iter().collect(),
             old,
             new,
+            created_at,
+            updated_at,
         }
-    }
-
-    async fn create_table(&self, client: &Client) -> Result<(), Box<dyn Error>> {
-        // Validate identifiers first
-        utils::is_valid_identifier(&self.table, "Invalid table name")?;
-
-        for col in &self.track_col {
-            utils::is_valid_identifier(col, "Invalid column name")?;
-        }
-
-        // Use the queries module to generate the SQL dynamically
-        let query = queries::create_tracking_table_sql(self);
-
-        client.execute(&query, &[]).await?;
-        Ok(())
-    }
-
-    async fn create_trigger(&self, client: &Client) -> Result<(), Box<dyn Error>> {
-        // Placeholder for database trigger creation logic
-        Ok(())
     }
 
     pub fn table_name(&self) -> String {
-        format!(
-            "liveo_track_{}_col_{}_on_{}",
-            self.table,
-            self.track_col.join("_"),
-            self.on.to_string()
-        )
+        format!("liveo_tracktable_{}", self.name)
     }
 
     pub fn func_name(&self) -> String {
-        format!(
-            "liveo_track_{}_col_{}_on_{}_func",
-            self.table,
-            self.track_col.join("_"),
-            self.on.to_string()
-        )
+        format!("liveo_func_{}", self.name)
     }
 
     pub fn trigger_name(&self) -> String {
-        format!(
-            "liveo_track_{}_col_{}_on_{}_trigger",
-            self.table,
-            self.track_col.join("_"),
-            self.on.to_string()
-        )
+        format!("liveo_trigger_{}", self.name)
     }
 }
 
@@ -83,6 +69,17 @@ pub enum On {
     Insert,
     Update,
     Delete,
+}
+
+impl On {
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "insert" => Some(On::Insert),
+            "update" => Some(On::Update),
+            "delete" => Some(On::Delete),
+            _ => None,
+        }
+    }
 }
 
 impl std::fmt::Display for On {
