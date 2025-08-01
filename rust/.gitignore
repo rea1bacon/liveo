@@ -1,0 +1,17 @@
+
+# Ignore build artifacts
+target/
+# Ignore Cargo.lock for libraries
+Cargo.lock
+# Ignore editor and IDE files
+.idea/
+.vscode/
+# Ignore Rust-specific files
+*.rs.bk
+# Ignore temporary files
+*.tmp
+# Ignore log files
+*.log
+# Ignore coverage reports
+coverage/
+# Ignore documentation files

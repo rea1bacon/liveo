@@ -1,0 +1,8 @@
+template for ts module
+# Ignore TypeScript build artifacts
+dist/
+# Ignore Node.js modules
+node_modules/
+
+
+

@@ -1,0 +1,11 @@
+[package]
+name = "backend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+liveo_core = { path = "../core" }
+
+[[bin]]
+name = "backend"
+path = "src/main.rs"
